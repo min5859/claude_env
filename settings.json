@@ -1,21 +1,39 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "haiku"
+  },
   "permissions": {
     "defaultMode": "auto"
   },
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
+  "model": "sonnet",
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline.sh"
+    "command": "bash ~/.claude/statusline.sh"
   },
   "enabledPlugins": {
     "bkit@bkit-marketplace": true,
+    "codex@openai-codex": true,
     "context7@claude-plugins-official": true,
-    "serena@claude-plugins-official": true
+    "serena@claude-plugins-official": true,
+    "company@claudecode-company": true
   },
-  "extraKnownMarketplaces": {},
+  "extraKnownMarketplaces": {
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    },
+    "claudecode-company": {
+      "source": {
+        "source": "github",
+        "repo": "gaebalai/claudecode-company"
+      }
+    }
+  },
+  "language": "Korean",
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true,
-  "language": "Korean"
+  "teammateMode": "auto"
 }
