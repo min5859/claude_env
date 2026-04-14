@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/statusline.sh"
+  },
+  "enabledPlugins": {
+    "bkit@bkit-marketplace": true,
+    "context7@claude-plugins-official": true,
+    "serena@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {},
+  "skipDangerousModePermissionPrompt": true,
+  "skipAutoPermissionPrompt": true,
+  "language": "Korean"
+}
