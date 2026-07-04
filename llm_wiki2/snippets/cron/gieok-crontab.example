@@ -1,0 +1,21 @@
+# gieok LLM wiki — Linux crontab 예시
+# 설치: crontab -e 로 아래 항목 추가 (경로 치환 후)
+#
+# 주의:
+# - cron 은 로그인 쉘이 아니므로 PATH 에 claude/node/git 위치를 명시해야 한다.
+#   (which claude; which node 로 확인 후 아래 PATH 에 반영)
+# - 서버 TZ 가 업무 시간대와 다르면 시각을 조정할 것.
+# - 상시 가동 서버가 아니라면 cron 은 미실행분을 catchup 하지 않는다 →
+#   systemd timer (Persistent=true) 또는 anacron 사용을 고려.
+
+PATH={{CLAUDE_NODE_GIT_PATH}}:/usr/local/bin:/usr/bin:/bin
+HOME={{HOME}}
+
+# 매일 07:00 — session-logs 미처리분을 wiki 로 선별 승격
+0 7 * * * OBSIDIAN_VAULT="{{VAULT_PATH}}" /bin/bash {{GIEOK_PATH}}/scripts/auto-ingest.sh >> $HOME/gieok-ingest.log 2>&1
+
+# 매일 07:20 — wiki 정합성 lint (선택)
+20 7 * * * OBSIDIAN_VAULT="{{VAULT_PATH}}" /bin/bash {{GIEOK_PATH}}/scripts/auto-lint.sh >> $HOME/gieok-lint.log 2>&1
+
+# 매일 07:40 — 처리 완료 30일 경과 로그 삭제 (보존 정책)
+40 7 * * * /bin/bash {{VAULT_PATH}}/scripts/session-log-retention.sh {{VAULT_PATH}} 30 >> $HOME/gieok-retention.log 2>&1

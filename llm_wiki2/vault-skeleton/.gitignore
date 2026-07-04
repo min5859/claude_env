@@ -1,0 +1,8 @@
+# macOS
+.DS_Store
+
+# gieok session logs (local only — 대화 전문이 담기므로 절대 commit 금지)
+session-logs/
+
+# confidential wiki 문서 (sensitivity: confidential)
+wiki/**/*-confidential.md

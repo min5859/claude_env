@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.gieok.lint</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>{{GIEOK_PATH}}/scripts/auto-lint.sh</string>
+    <string>{{VAULT_PATH}}</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key>
+    <string>{{HOME}}</string>
+    <key>PATH</key>
+    <string>{{CLAUDE_NODE_GIT_PATH}}:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key>
+      <integer>7</integer>
+      <key>Minute</key>
+      <integer>20</integer>
+    </dict>
+  </array>
+  <key>StandardOutPath</key>
+  <string>{{HOME}}/gieok-lint.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{HOME}}/gieok-lint.log</string>
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>

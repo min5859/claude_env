@@ -1,0 +1,72 @@
+{
+  "_comment": "~/.claude/settings.json 의 hooks 에 병합할 gieok hook 구성. {{VAULT_PATH}}=wiki vault 절대경로, {{GIEOK_PATH}}=gieok 저장소 절대경로 로 치환. 기존 hooks 를 덮어쓰지 말고 이벤트별로 병합할 것.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"{{VAULT_PATH}}\" && git pull --rebase --quiet 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "OBSIDIAN_VAULT=\"{{VAULT_PATH}}\" node '{{GIEOK_PATH}}/hooks/wiki-context-injector.mjs'"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "OBSIDIAN_VAULT=\"{{VAULT_PATH}}\" node '{{GIEOK_PATH}}/hooks/session-logger.mjs'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "OBSIDIAN_VAULT=\"{{VAULT_PATH}}\" node '{{GIEOK_PATH}}/hooks/session-logger.mjs'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "OBSIDIAN_VAULT=\"{{VAULT_PATH}}\" node '{{GIEOK_PATH}}/hooks/session-logger.mjs'"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "OBSIDIAN_VAULT=\"{{VAULT_PATH}}\" node '{{GIEOK_PATH}}/hooks/session-logger.mjs'"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"${GIEOK_NO_LOG:-0}\" = \"1\" ] || { cd \"{{VAULT_PATH}}\" && grep -q '^session-logs/' .gitignore 2>/dev/null && git symbolic-ref -q HEAD >/dev/null 2>&1 && git add wiki/ raw-sources/ templates/ CLAUDE.md 2>/dev/null && (git diff --cached --quiet || (git commit -m \"auto: wiki update $(date +%Y%m%d-%H%M)\" --quiet && git push --quiet)) 2>/dev/null; } || true"
+          }
+        ]
+      }
+    ]
+  }
+}
