@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# opus-orchestration off|hard|soft|status
+#   off  — 비활성 (active.md -> empty.md)
+#   hard — Opus 메인 오케스트레이터 + 직접수정 하드블록 (active.md -> mode-hard.md)
+#   soft — Sonnet 메인 + Opus 상향 에스컬레이션 + 소프트 넛지 (active.md -> mode-soft.md)
+# 상태 파일과 active.md 심링크만 바꾼다(기존 설정 비파괴). 'on'은 soft의 별칭(레거시 호환).
+set -euo pipefail
+
+ORCH_DIR="${HOME}/.claude/opus-orchestration"
+STATE_FLAG="${HOME}/.claude/.opus-orchestration-state"
+ACTIVE="${ORCH_DIR}/active.md"
+
+usage() { echo "usage: opus-orchestration {off|hard|soft|status}" >&2; exit 2; }
+
+set_mode() { # $1 = mode, $2 = active target (상대 파일명)
+    printf '%s' "$1" > "${STATE_FLAG}"
+    ln -sfn "$2" "${ACTIVE}"
+    # 대문자 표기는 tr 로 (bash 3.2 호환 — ${1^^} 는 bash 4+ 전용)
+    echo "opus-orchestration: $(printf '%s' "$1" | tr '[:lower:]' '[:upper:]') (active.md -> $2)"
+}
+
+case "${1:-}" in
+    off)        set_mode off  empty.md ;;
+    hard)       set_mode hard  mode-hard.md ;;
+    soft|on)    set_mode soft  mode-soft.md ;;
+    status)
+        state="unknown"
+        [ -r "${STATE_FLAG}" ] && state="$(cat "${STATE_FLAG}")"
+        target="(none)"
+        if [ -L "${ACTIVE}" ]; then target="$(readlink "${ACTIVE}")"
+        elif [ -e "${ACTIVE}" ]; then target="(regular file)"; fi
+        echo "mode  : ${state}"
+        echo "active: ${ACTIVE} -> ${target}"
+        ;;
+    *) usage ;;
+esac
