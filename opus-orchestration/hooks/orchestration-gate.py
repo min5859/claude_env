@@ -3,7 +3,7 @@
 
 메인 에이전트만 대상으로 한다. 서브에이전트(agent_id/agent_type)와 off 모드는 통과. 예외는 fail-open.
   - hard: 메인의 직접 코드수정을 차단(한 턴 distinct 코드 파일 HARD_MAX 초과 시 exit 2, Bash 인플레이스도 차단).
-  - soft: 차단하지 않고 조언만 주입(임계 SOFT_THRESHOLD 도달 시 allow + additionalContext, 한 턴 1회).
+  - soft: 차단하지 않고 조언만 주입(임계 SOFT_THRESHOLD 도달 시 additionalContext, 권한 흐름 불개입, 한 턴 1회).
 env:
   OPUS_ORCH_HARD_LIMIT       hard 모드 허용 직접 코드파일 수 (기본 2 → 3번째부터 차단)
   OPUS_ORCH_NUDGE_THRESHOLD  soft 모드 넛지 임계 distinct 코드파일 수 (기본 3)
@@ -11,6 +11,7 @@ env:
 import json
 import os
 import re
+import shlex
 import sys
 
 HOME = os.path.expanduser("~")
@@ -99,19 +100,78 @@ def edited_path(tool_name, tool_input):
     return None
 
 
-def bash_direct_write_reason(cmd):
-    if not cmd:
+# Bash 인플레이스/덮어쓰기 감지 — 따옴표 안 문자열과 heredoc 본문은 데이터로 취급해 오탐을 막는다.
+_REDIR_TOKENS = {">", ">>", ">|", "&>", "&>>"}
+_SED_INPLACE = re.compile(r"-[EnrsuzbW]*i")
+_PERL_INPLACE = re.compile(r"-[a-z0-9]*i(?![A-Za-z])")
+
+
+def _strip_heredocs(cmd):
+    # heredoc 본문 제거 — 본문 속 'sed -i' 같은 텍스트가 명령으로 오인되는 것 방지. 여는 줄은 유지.
+    lines = cmd.split("\n")
+    out, delim = [], None
+    for ln in lines:
+        if delim is not None:
+            if ln.strip() == delim:
+                delim = None
+            continue
+        m = re.search(r"<<-?\s*(['\"]?)([A-Za-z_]\w*)\1", ln)
+        if m:
+            delim = m.group(2)
+        out.append(ln)
+    return "\n".join(out)
+
+
+def _segments(cmd):
+    # 따옴표 인지 토큰화 후 ; | & 기준으로 파이프라인 세그먼트 분리. 토큰화 실패는 fail-open(None).
+    lex = shlex.shlex(_strip_heredocs(cmd), posix=True, punctuation_chars=True)
+    lex.whitespace_split = True
+    try:
+        tokens = list(lex)
+    except ValueError:
         return None
-    if re.search(r"\bsed\b.*(\s-i|\s--in-place)", cmd):
-        return "sed 인플레이스 편집"
-    if re.search(r"\bperl\b.*\s-\w*i", cmd):
-        return "perl 인플레이스 편집"
-    for m in re.finditer(r">>?\s*([^\s;|&<>]+)", cmd):
-        if is_code_file(m.group(1).strip("\"'")):
-            return "리다이렉션으로 코드 파일 쓰기"
-    for m in re.finditer(r"\btee\b\s+(?:-a\s+)?([^\s;|&<>]+)", cmd):
-        if is_code_file(m.group(1).strip("\"'")):
-            return "tee로 코드 파일 쓰기"
+    segs, cur = [], []
+    for t in tokens:
+        if t and not set(t) - set(";|&"):
+            segs.append(cur)
+            cur = []
+        else:
+            cur.append(t)
+    segs.append(cur)
+    return segs
+
+
+def bash_direct_write_reason(cmd):
+    segs = _segments(cmd or "")
+    if not segs:
+        return None
+    for seg in segs:
+        for i, t in enumerate(seg):
+            rest = seg[i + 1:]
+            name = os.path.basename(t)
+            if name in ("sed", "gsed") and any(
+                x == "--in-place" or x.startswith("--in-place=") or _SED_INPLACE.match(x)
+                for x in rest
+            ):
+                return "sed 인플레이스 편집"
+            if name == "perl" and any(_PERL_INPLACE.match(x) for x in rest):
+                return "perl 인플레이스 편집"
+            if name == "tee":
+                for x in rest:
+                    if not set(x) - set("<>|&;"):  # 리다이렉트·연산자부터는 tee 대상 아님
+                        break
+                    if x.startswith("-"):
+                        continue
+                    if is_code_file(x):
+                        return "tee로 코드 파일 쓰기"
+            if t in _REDIR_TOKENS and rest and is_code_file(rest[0]):
+                return "리다이렉션으로 코드 파일 쓰기"
+            if name in ("sh", "bash", "zsh", "dash", "ksh") and "-c" in rest:
+                inner = rest[rest.index("-c") + 1:]
+                if inner:
+                    r = bash_direct_write_reason(inner[0])
+                    if r:
+                        return r
     return None
 
 
@@ -143,10 +203,11 @@ def block(reason):
 
 
 def nudge(message):
+    # permissionDecision 은 설정하지 않는다 — "allow" 는 권한 프롬프트를 우회하는 부작용이 있다.
+    # additionalContext 만 주입하면 권한 흐름은 평소대로 진행된다.
     out = {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "permissionDecision": "allow",
             "additionalContext": message,
         }
     }

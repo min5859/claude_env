@@ -115,6 +115,6 @@ install 이 추가한 것만 수술적으로 되돌린다. 백업(`*.bak-orchest
 ## 8. 동작 원리 (한 줄씩)
 
 - **모드 값** `~/.claude/.opus-orchestration-state`(off/hard/soft)를 훅·env.sh·토글이 각각 읽어 분기.
-- **게이트**는 메인 에이전트만 대상(서브에이전트는 `agent_id`/`agent_type`로 식별해 통과), 예외는 fail-open.
-- **넛지**(soft)는 차단 대신 `permissionDecision:"allow"` + `additionalContext` 로 모델에 조언만 주입(한 턴 1회).
+- **게이트**는 메인 에이전트만 대상(서브에이전트는 `agent_id`/`agent_type`로 식별해 통과), 예외는 fail-open. Bash 검사는 따옴표·heredoc 인지 토큰화로 문자열 데이터 오탐을 막는다.
+- **넛지**(soft)는 차단 대신 `additionalContext` 만 주입(한 턴 1회). `permissionDecision` 은 설정하지 않는다 — `"allow"` 는 권한 프롬프트를 우회하는 부작용이 있다.
 - **토글**은 상태파일과 `active.md` 심링크 대상만 바꿔 기존 설정을 건드리지 않는다.
