@@ -8,6 +8,7 @@
 # 주의:
 #   - 이 파일은 셸 시작 시 1회 source 된다. 모드 전환 후에는 새 셸(또는 재-source)부터 반영된다.
 #   - ANTHROPIC_MODEL은 세션 내 /model 선택이나 `claude --model ...` 플래그가 있으면 그쪽이 우선한다.
+#   - 모델 세대가 바뀌면(예: Claude 5 계열 출시) 아래 핀을 수동으로 재점검한다 — 세대 자동 추종을 막는 것이 이 핀의 목적이다.
 
 __opus_orch_state_file="${HOME}/.claude/.opus-orchestration-state"
 __opus_orch_mode="off"

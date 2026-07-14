@@ -13,6 +13,7 @@ import os
 import re
 import shlex
 import sys
+import time
 
 HOME = os.path.expanduser("~")
 STATE_FLAG = os.path.join(HOME, ".claude", ".opus-orchestration-state")
@@ -188,9 +189,23 @@ def load_state(session_id):
     return path, {"turn_id": None, "files": [], "nudged": False}
 
 
+STATE_TTL = 7 * 24 * 3600  # 세션 상태 파일 보존 기간(초)
+
+
+def _prune_stale_state(now):
+    # 세션마다 하나씩 쌓이는 state/*.json 무한 누적 방지. 실패는 무시(fail-open).
+    try:
+        for e in os.scandir(STATE_DIR):
+            if e.name.endswith(".json") and now - e.stat().st_mtime > STATE_TTL:
+                os.unlink(e.path)
+    except Exception:
+        pass
+
+
 def save_state(path, data):
     try:
         os.makedirs(STATE_DIR, exist_ok=True)
+        _prune_stale_state(time.time())
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f)
     except Exception:

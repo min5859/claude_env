@@ -59,10 +59,15 @@ python3 - "$HOME" <<'PY'
 import json, os, sys
 home = sys.argv[1]
 p = os.path.join(home, ".claude", "settings.json")
-try:
-    with open(p, encoding="utf-8") as f:
-        cfg = json.load(f)
-except Exception:
+if os.path.exists(p):
+    try:
+        with open(p, encoding="utf-8") as f:
+            cfg = json.load(f)
+    except Exception as e:
+        print("  ❌ settings.json 파싱 실패 — 기존 파일 보호를 위해 병합을 중단합니다: %s" % e)
+        print("     파일을 고친 뒤 install.sh 를 다시 실행하세요.")
+        sys.exit(1)
+else:
     cfg = {}
 hooks = cfg.setdefault("hooks", {})
 pre = hooks.setdefault("PreToolUse", [])

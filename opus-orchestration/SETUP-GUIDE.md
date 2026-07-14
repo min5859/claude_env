@@ -44,8 +44,9 @@ opus-orchestration/
 - 셸: zsh 또는 bash. ⚠️ 로그인 zsh 는 `.bashrc` 를 안 읽는다 — install 은 `$SHELL` 과 존재하는 rc 를 보고
   맞는 파일에 넣는다. 토글 스크립트는 macOS 기본 bash 3.2 호환(`${x^^}` 같은 bash4 문법 미사용).
 - **Claude Code 버전**: 게이트의 서브에이전트 식별(`agent_id`)·턴 카운팅(`prompt_id`)은 CC v2.1.196+ 의 PreToolUse
-  payload 필드에 의존한다(문서 확인됨). 더 낮은 버전은 `prompt_id` 부재 시 transcript 기반 fallback 으로 동작하며
-  (정밀도만 낮아지고 깨지지 않음), soft 모드는 넛지뿐이라 영향이 미미하다.
+  payload 필드에 의존한다(문서 확인됨). **hard 모드는 v2.1.196+ 필수** — 더 낮은 버전에서는 `agent_id` 가 없어
+  게이트가 implementer 등 서브에이전트의 편집까지 차단해 위임 자체가 깨진다. soft 모드는 넛지뿐이라 구버전에서도
+  영향이 미미하다(턴 카운팅만 transcript fallback 으로 정밀도 저하).
 
 ## 4. 설치 (회사 PC)
 
@@ -87,7 +88,7 @@ opus-orchestration off        # 비활성
 - 메인 모델이 자동으로 안 바뀌면 세션에서 `/model opus`(hard)·`/model sonnet`(soft) 로 지정
   (`/model`·`--model` 이 env 보다 우선).
 
-튜닝(선택): `OPUS_ORCH_HARD_LIMIT`(기본 2), `OPUS_ORCH_NUDGE_THRESHOLD`(기본 3) 환경변수.
+튜닝(선택): `OPUS_ORCH_HARD_LIMIT`(기본 2), `OPUS_ORCH_NUDGE_THRESHOLD`(기본 3) 환경변수. 모델 세대 교체 시에는 env.sh 의 핀(`claude-opus-4-8` 등)을 수동 갱신한다.
 
 ## 6. 검증 체크리스트
 
